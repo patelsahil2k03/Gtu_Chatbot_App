@@ -1,0 +1,2 @@
+# Gtu_Chatbot_App
+Create a single-point solution for courses, admission examinations, and other important issues. Many students do not regularly visit websites for important updates and miss their important tasks like enrolment fees, and exam fees payment.  This chatbot will give quick replies for results, fee payments, and the latest circular when students enter the enrolment number. After entering the enrolment number bot will give options for different issues and will reply to their selection.
