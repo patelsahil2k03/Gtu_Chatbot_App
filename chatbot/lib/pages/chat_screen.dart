@@ -1,10 +1,10 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:chatbot/models/message_model.dart';
 import 'package:chatbot/models/user_model.dart';
 
 class ChatScreen extends StatefulWidget {
-  final User user;
-
+  final Usr user;
   ChatScreen({required this.user});
 
   @override
@@ -13,7 +13,8 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final myController = TextEditingController();
-  int prevUserId=0;
+  int prevUserId = 0;
+  final FirebaseAuth auth = FirebaseAuth.instance;
 
   _chatBubble(Message message, bool isMe, bool isSameUser) {
     if (isMe) {
@@ -48,39 +49,39 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           !isSameUser
               ? Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: <Widget>[
-              Text(
-                message.time,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Colors.black45,
-                ),
-              ),
-              const SizedBox(
-                width: 10,
-              ),
-              Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.5),
-                      spreadRadius: 2,
-                      blurRadius: 5,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: <Widget>[
+                    Text(
+                      message.time,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.black45,
+                      ),
+                    ),
+                    const SizedBox(
+                      width: 10,
+                    ),
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.5),
+                            spreadRadius: 2,
+                            blurRadius: 5,
+                          ),
+                        ],
+                      ),
+                      // child: CircleAvatar(
+                      //   radius: 15,
+                      //   backgroundImage: AssetImage(message.sender.imageUrl),
+                      // ),
                     ),
                   ],
-                ),
-                // child: CircleAvatar(
-                //   radius: 15,
-                //   backgroundImage: AssetImage(message.sender.imageUrl),
-                // ),
-              ),
-            ],
-          )
+                )
               : Container(
-            child: null,
-          ),
+                  child: null,
+                ),
         ],
       );
     } else {
@@ -115,38 +116,38 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           !isSameUser
               ? Row(
-            children: <Widget>[
-              Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.5),
-                      spreadRadius: 2,
-                      blurRadius: 5,
+                  children: <Widget>[
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.5),
+                            spreadRadius: 2,
+                            blurRadius: 5,
+                          ),
+                        ],
+                      ),
+                      child: CircleAvatar(
+                        radius: 15,
+                        backgroundImage: AssetImage(message.sender.imageUrl),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 10,
+                    ),
+                    Text(
+                      message.time,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.black45,
+                      ),
                     ),
                   ],
-                ),
-                child: CircleAvatar(
-                  radius: 15,
-                  backgroundImage: AssetImage(message.sender.imageUrl),
-                ),
-              ),
-              SizedBox(
-                width: 10,
-              ),
-              Text(
-                message.time,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Colors.black45,
-                ),
-              ),
-            ],
-          )
+                )
               : Container(
-            child: null,
-          ),
+                  child: null,
+                ),
         ],
       );
     }
@@ -167,17 +168,15 @@ class _ChatScreenState extends State<ChatScreen> {
             onPressed: () {},
           ),
           Expanded(
-            child : Container(
-              child:  TextField(
-                decoration: InputDecoration.collapsed(
-                  hintText: 'Send a message..',
-
-                ),
-                controller: myController,
-                textCapitalization: TextCapitalization.sentences,
+              child: Container(
+            child: TextField(
+              decoration: InputDecoration.collapsed(
+                hintText: 'Send a message..',
               ),
-            )
-          ),
+              controller: myController,
+              textCapitalization: TextCapitalization.sentences,
+            ),
+          )),
           IconButton(
             icon: const Icon(Icons.send),
             iconSize: 25,
@@ -185,7 +184,13 @@ class _ChatScreenState extends State<ChatScreen> {
             onPressed: () {
               debugPrint(myController.text);
               //messages.Message()
-              messages.insert(0,Message(sender: currentUser, time: DateTime.now().toString(), text: myController.text, unread: true));
+              messages.insert(
+                  0,
+                  Message(
+                      sender: currentUser,
+                      time: DateTime.now().toString(),
+                      text: myController.text,
+                      unread: true));
               setState(() {
                 _dispTxt();
               });
@@ -197,7 +202,7 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  _dispTxt(){
+  _dispTxt() {
     debugPrint(messages.toString());
     return Expanded(
       child: ListView.builder(
@@ -215,66 +220,75 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  signOut() async {
+    await auth.signOut();
+    Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => signOut(),
+        ));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFFF6F6F6),
       appBar: AppBar(
-        brightness: Brightness.dark,
-        centerTitle: true,
-        title: RichText(
-          textAlign: TextAlign.center,
-          text: TextSpan(
-            children: [
-              TextSpan(
-                  text: widget.user.name,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w400,
-                  )),
-              TextSpan(text: '\n'),
-              widget.user.isOnline ?
-              const TextSpan(
-                text: 'Online',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w400,
-                ),
-              )
-                  :
-              const TextSpan(
-                text: 'Offline',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w400,
-                ),
-              )
-            ],
+          brightness: Brightness.dark,
+          centerTitle: true,
+          title: RichText(
+            textAlign: TextAlign.center,
+            text: TextSpan(
+              children: [
+                TextSpan(
+                    text: widget.user.name,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w400,
+                    )),
+                TextSpan(text: '\n'),
+                widget.user.isOnline
+                    ? const TextSpan(
+                        text: 'Online',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      )
+                    : const TextSpan(
+                        text: 'Offline',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      )
+              ],
+            ),
           ),
-        ),
-        leading: IconButton(
-            icon: Icon(Icons.arrow_back_ios),
-            color: Colors.white,
-            onPressed: () {
-              Navigator.pop(context);
-            }),
-      ),
+          actions: [
+            IconButton(
+                icon: Icon(Icons.logout_outlined),
+                color: Colors.white,
+                onPressed: () {
+                  Navigator.pop(context);
+                }),
+          ]),
       body: Column(
         children: <Widget>[
-        Expanded(
-        child: ListView.builder(
-          reverse: true,
-          padding: EdgeInsets.all(20),
-          itemCount: messages.length,
-          itemBuilder: (BuildContext context, int index) {
-              final Message message = messages[index];
-              final bool isMe = message.sender.id == currentUser.id;
-              final bool isSameUser = prevUserId == message.sender.id;
-              prevUserId = message.sender.id;
-              return _chatBubble(message, isMe, isSameUser);
-            },
+          Expanded(
+            child: ListView.builder(
+              reverse: true,
+              padding: EdgeInsets.all(20),
+              itemCount: messages.length,
+              itemBuilder: (BuildContext context, int index) {
+                final Message message = messages[index];
+                final bool isMe = message.sender.id == currentUser.id;
+                final bool isSameUser = prevUserId == message.sender.id;
+                prevUserId = message.sender.id;
+                return _chatBubble(message, isMe, isSameUser);
+              },
+            ),
           ),
-        ),
           _sendMessageArea(),
         ],
       ),

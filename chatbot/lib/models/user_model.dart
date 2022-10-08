@@ -1,10 +1,10 @@
-class User {
+class Usr {
   final int id;
   final String name;
   final String imageUrl;
   final bool isOnline;
 
-  User({
+  Usr({
     required this.id,
     required this.name,
     required this.imageUrl,
@@ -13,7 +13,7 @@ class User {
 }
 
 // YOU - current user
-final User currentUser = User(
+final Usr currentUser = Usr(
   id: 0,
   name: 'Student',
   imageUrl: '',
@@ -21,7 +21,7 @@ final User currentUser = User(
 );
 
 // USERS
-final User gtuBot = User(
+final Usr gtuBot = Usr(
   id: 1,
   name: 'GTU BOT',
   isOnline: true,
