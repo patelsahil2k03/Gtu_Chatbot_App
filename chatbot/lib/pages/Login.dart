@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class LoginPage extends StatefulWidget {
-  LoginPage({Key? key}) : super(key: key);
+  const LoginPage({Key? key}) : super(key: key);
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -12,54 +12,115 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  String _password = '';
-  String _enrollmentID = '';
-  int index = 0;
+  final TextEditingController _enrollmentIdController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
 
-  static Future<User?> login(
-      {required String enrollmentID,
-      required String password,
-      required BuildContext context}) async {
-    FirebaseAuth auth = FirebaseAuth.instance;
-    User? user;
+  String _password = '';
+  String _enrollmentId = '';
+  bool _isSubmitting = false;
+  String? _errorText;
+
+  static Future<User?> login({
+    required String enrollmentId,
+    required String password,
+  }) async {
+    final FirebaseAuth auth = FirebaseAuth.instance;
+    final String normalizedEnrollment = enrollmentId.trim().toLowerCase();
+    final String email = normalizedEnrollment.contains('@')
+        ? normalizedEnrollment
+        : '$normalizedEnrollment@gmail.com';
+
     try {
-      UserCredential userCredential = await auth.signInWithEmailAndPassword(
-          email: enrollmentID + '@gmail.com', password: password);
-      user = userCredential.user;
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'user-not-found') {
-        print('No user found for that email.');
-      } else if (e.code == 'wrong-password') {
-        print('Wrong password provided for that user.');
-      }
-    } catch (e) {
-      print(e);
+      final UserCredential userCredential = await auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      return userCredential.user;
+    } on FirebaseAuthException {
+      rethrow;
     }
-    return user;
+  }
+
+  @override
+  void dispose() {
+    _enrollmentIdController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    FocusScope.of(context).unfocus();
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+      _errorText = null;
+    });
+
+    try {
+      final User? user = await login(
+        enrollmentId: _enrollmentId,
+        password: _password,
+      );
+
+      if (!mounted) return;
+      if (user != null) {
+        final Message chat = chats.first;
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatScreen(user: chat.sender),
+          ),
+        );
+      } else {
+        setState(() {
+          _errorText = 'Login failed. Please try again.';
+        });
+      }
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        if (e.code == 'user-not-found') {
+          _errorText = 'No account found for this enrollment/email.';
+        } else if (e.code == 'wrong-password') {
+          _errorText = 'Incorrect password.';
+        } else {
+          _errorText = 'Authentication failed: ${e.message ?? e.code}';
+        }
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _errorText = 'Unexpected error. Please try again.';
+      });
+    } finally {
+      if (!mounted) return;
+      setState(() {
+        _isSubmitting = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final Message chat = messages[index];
-    TextEditingController _enrollmentIDController = TextEditingController();
-    TextEditingController _passwordController = TextEditingController();
-
     return Form(
       key: _formKey,
       child: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           image: DecorationImage(
-              image: AssetImage('assets/LoginBackground.png'),
-              fit: BoxFit.cover),
+            image: AssetImage('assets/LoginBackground.png'),
+            fit: BoxFit.cover,
+          ),
         ),
         child: Scaffold(
           backgroundColor: Colors.transparent,
           body: Stack(
             children: [
-              Container(),
               Container(
-                padding: EdgeInsets.only(left: 35, top: 130),
-                child: Text(
+                padding: const EdgeInsets.only(left: 35, top: 130),
+                child: const Text(
                   'Welcome!',
                   style: TextStyle(
                     color: Colors.white,
@@ -72,103 +133,103 @@ class _LoginPageState extends State<LoginPage> {
               SingleChildScrollView(
                 child: Container(
                   padding: EdgeInsets.only(
-                      top: MediaQuery.of(context).size.height * 0.5),
+                    top: MediaQuery.of(context).size.height * 0.48,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
-                        margin: EdgeInsets.only(left: 35, right: 35),
+                        margin: const EdgeInsets.symmetric(horizontal: 35),
                         child: Column(
                           children: [
                             TextFormField(
-                              controller: _enrollmentIDController,
-                              style: TextStyle(color: Colors.black),
+                              controller: _enrollmentIdController,
+                              style: const TextStyle(color: Colors.black),
                               decoration: InputDecoration(
-                                  fillColor: Colors.grey.shade100,
-                                  filled: true,
-                                  hintText: "Enrollment Number",
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  )),
+                                fillColor: Colors.grey.shade100,
+                                filled: true,
+                                hintText: 'Enrollment Number or Email',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
                               validator: (value) {
                                 if (value == null || value.trim().isEmpty) {
-                                  return 'Please enter your enrollment number';
+                                  return 'Please enter enrollment number or email';
                                 }
                                 return null;
                               },
-                              onChanged: (value) => _enrollmentID = value,
+                              onChanged: (value) => _enrollmentId = value,
                             ),
-                            SizedBox(
-                              height: 30,
-                            ),
+                            const SizedBox(height: 24),
                             TextFormField(
                               controller: _passwordController,
-                              style: TextStyle(),
+                              obscureText: true,
                               decoration: InputDecoration(
-                                  fillColor: Colors.grey.shade100,
-                                  filled: true,
-                                  hintText: "Password",
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  )),
+                                fillColor: Colors.grey.shade100,
+                                filled: true,
+                                hintText: 'Password',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
                               validator: (value) {
                                 if (value == null || value.trim().isEmpty) {
-                                  return 'This field is required';
+                                  return 'Password is required';
                                 }
                                 if (value.trim().length < 8) {
-                                  return 'Password must be at least 8 characters in length';
+                                  return 'Password must be at least 8 characters';
                                 }
                                 return null;
                               },
                               onChanged: (value) => _password = value,
                             ),
-                            SizedBox(
-                              height: 40,
-                            ),
+                            const SizedBox(height: 16),
+                            if (_errorText != null)
+                              Text(
+                                _errorText!,
+                                style: const TextStyle(
+                                  color: Colors.redAccent,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            const SizedBox(height: 24),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 TextButton(
-                                    onPressed: () {},
-                                    child: Text(
-                                      'Forgot Password',
-                                      style: TextStyle(
-                                        decoration: TextDecoration.underline,
-                                        color: Color(0xff4c505b),
-                                        fontSize: 18,
-                                      ),
-                                    )),
+                                  onPressed: () {},
+                                  child: const Text(
+                                    'Forgot Password',
+                                    style: TextStyle(
+                                      decoration: TextDecoration.underline,
+                                      color: Color(0xff4c505b),
+                                      fontSize: 18,
+                                    ),
+                                  ),
+                                ),
                                 CircleAvatar(
                                   radius: 30,
-                                  backgroundColor: Color(0xff4c505b),
-                                  child: IconButton(
-                                      color: Colors.white,
-                                      onPressed: () async {
-                                        if (_formKey.currentState!.validate()) {
-                                          User? user = await login(
-                                              enrollmentID: _enrollmentID,
-                                              password: _password,
-                                              context: context);
-                                          if (user != null) {
-                                            Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                    builder: (context) =>
-                                                        ChatScreen(
-                                                          user: chat.sender,
-                                                        )));
-                                          }
-                                        }
-                                      },
-                                      icon: Icon(
-                                        Icons.arrow_forward,
-                                      )),
-                                )
+                                  backgroundColor: const Color(0xff4c505b),
+                                  child: _isSubmitting
+                                      ? const Padding(
+                                          padding: EdgeInsets.all(14),
+                                          child: CircularProgressIndicator(
+                                            color: Colors.white,
+                                            strokeWidth: 2.2,
+                                          ),
+                                        )
+                                      : IconButton(
+                                          color: Colors.white,
+                                          onPressed: _submit,
+                                          icon: const Icon(Icons.arrow_forward),
+                                        ),
+                                ),
                               ],
                             ),
                           ],
                         ),
-                      )
+                      ),
                     ],
                   ),
                 ),

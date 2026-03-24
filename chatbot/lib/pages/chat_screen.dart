@@ -1,199 +1,111 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
 import 'package:chatbot/models/message_model.dart';
 import 'package:chatbot/models/user_model.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 
 class ChatScreen extends StatefulWidget {
   final Usr user;
-  ChatScreen({required this.user});
+
+  const ChatScreen({required this.user, Key? key}) : super(key: key);
 
   @override
-  _ChatScreenState createState() => _ChatScreenState();
+  State<ChatScreen> createState() => _ChatScreenState();
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  final myController = TextEditingController();
-  int prevUserId = 0;
+  final TextEditingController myController = TextEditingController();
   final FirebaseAuth auth = FirebaseAuth.instance;
 
-  _chatBubble(Message message, bool isMe, bool isSameUser) {
-    if (isMe) {
-      return Column(
-        children: <Widget>[
-          Container(
-            alignment: Alignment.topRight,
-            child: Container(
-              constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width * 0.80,
-              ),
-              padding: EdgeInsets.all(10),
-              margin: EdgeInsets.symmetric(vertical: 10),
-              decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor,
-                borderRadius: BorderRadius.circular(15),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.5),
-                    spreadRadius: 2,
-                    blurRadius: 5,
-                  ),
-                ],
-              ),
-              child: Text(
-                message.text,
-                style: const TextStyle(
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-          !isSameUser
-              ? Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: <Widget>[
-                    Text(
-                      message.time,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.black45,
-                      ),
-                    ),
-                    const SizedBox(
-                      width: 10,
-                    ),
-                    Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withOpacity(0.5),
-                            spreadRadius: 2,
-                            blurRadius: 5,
-                          ),
-                        ],
-                      ),
-                      // child: CircleAvatar(
-                      //   radius: 15,
-                      //   backgroundImage: AssetImage(message.sender.imageUrl),
-                      // ),
-                    ),
-                  ],
-                )
-              : Container(
-                  child: null,
-                ),
-        ],
-      );
-    } else {
-      return Column(
-        children: <Widget>[
-          Container(
-            alignment: Alignment.topLeft,
-            child: Container(
-              constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width * 0.80,
-              ),
-              padding: EdgeInsets.all(10),
-              margin: EdgeInsets.symmetric(vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(15),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.5),
-                    spreadRadius: 2,
-                    blurRadius: 5,
-                  ),
-                ],
-              ),
-              child: Text(
-                message.text,
-                style: const TextStyle(
-                  color: Colors.black54,
-                ),
-              ),
-            ),
-          ),
-          !isSameUser
-              ? Row(
-                  children: <Widget>[
-                    Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withOpacity(0.5),
-                            spreadRadius: 2,
-                            blurRadius: 5,
-                          ),
-                        ],
-                      ),
-                      child: CircleAvatar(
-                        radius: 15,
-                        backgroundImage: AssetImage(message.sender.imageUrl),
-                      ),
-                    ),
-                    SizedBox(
-                      width: 10,
-                    ),
-                    Text(
-                      message.time,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.black45,
-                      ),
-                    ),
-                  ],
-                )
-              : Container(
-                  child: null,
-                ),
-        ],
-      );
-    }
+  @override
+  void dispose() {
+    myController.dispose();
+    super.dispose();
   }
 
-  _sendMessageArea() {
-    //final txt = myController.text;
+  String _formatTime(DateTime dt) {
+    final String h = dt.hour.toString().padLeft(2, '0');
+    final String m = dt.minute.toString().padLeft(2, '0');
+    return '$h:$m';
+  }
+
+  Widget _chatBubble(Message message, bool isMe) {
+    final Color bubbleColor = isMe ? Theme.of(context).primaryColor : Colors.white;
+    final Color textColor = isMe ? Colors.white : Colors.black87;
+
+    return Column(
+      crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      children: <Widget>[
+        Container(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.8,
+          ),
+          padding: const EdgeInsets.all(10),
+          margin: const EdgeInsets.symmetric(vertical: 6),
+          decoration: BoxDecoration(
+            color: bubbleColor,
+            borderRadius: BorderRadius.circular(15),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.35),
+                spreadRadius: 1,
+                blurRadius: 4,
+              ),
+            ],
+          ),
+          child: Text(
+            message.text,
+            style: TextStyle(color: textColor),
+          ),
+        ),
+        Text(
+          _formatTime(message.time),
+          style: const TextStyle(fontSize: 12, color: Colors.black45),
+        ),
+      ],
+    );
+  }
+
+  Widget _sendMessageArea() {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
       height: 70,
       color: Colors.white,
       child: Row(
         children: <Widget>[
           IconButton(
-            icon: Icon(Icons.record_voice_over),
+            icon: const Icon(Icons.record_voice_over),
             iconSize: 25,
             color: Theme.of(context).primaryColor,
             onPressed: () {},
           ),
           Expanded(
-              child: Container(
             child: TextField(
-              decoration: InputDecoration.collapsed(
+              decoration: const InputDecoration.collapsed(
                 hintText: 'Send a message..',
               ),
               controller: myController,
               textCapitalization: TextCapitalization.sentences,
             ),
-          )),
+          ),
           IconButton(
             icon: const Icon(Icons.send),
             iconSize: 25,
             color: Theme.of(context).primaryColor,
             onPressed: () {
-              debugPrint(myController.text);
-              //messages.Message()
+              final String text = myController.text.trim();
+              if (text.isEmpty) return;
+
               messages.insert(
-                  0,
-                  Message(
-                      sender: currentUser,
-                      time: DateTime.now().toString(),
-                      text: myController.text,
-                      unread: true));
-              setState(() {
-                _dispTxt();
-              });
+                0,
+                Message(
+                  sender: currentUser,
+                  time: DateTime.now(),
+                  text: text,
+                  unread: true,
+                ),
+              );
+
+              setState(() {});
               myController.clear();
             },
           ),
@@ -202,90 +114,59 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  _dispTxt() {
-    debugPrint(messages.toString());
-    return Expanded(
-      child: ListView.builder(
-        reverse: true,
-        padding: EdgeInsets.all(20),
-        itemCount: messages.length,
-        itemBuilder: (BuildContext context, int index) {
-          final Message message = messages[index];
-          final bool isMe = message.sender.id == currentUser.id;
-          final bool isSameUser = prevUserId == message.sender.id;
-          prevUserId = message.sender.id;
-          return _chatBubble(message, isMe, isSameUser);
-        },
-      ),
-    );
-  }
-
-  signOut() async {
+  Future<void> _signOut() async {
     await auth.signOut();
-    Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => signOut(),
-        ));
+    if (!mounted) return;
+    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF6F6F6),
+      backgroundColor: const Color(0xFFF6F6F6),
       appBar: AppBar(
-          brightness: Brightness.dark,
-          centerTitle: true,
-          title: RichText(
-            textAlign: TextAlign.center,
-            text: TextSpan(
-              children: [
-                TextSpan(
-                    text: widget.user.name,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w400,
-                    )),
-                TextSpan(text: '\n'),
-                widget.user.isOnline
-                    ? const TextSpan(
-                        text: 'Online',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      )
-                    : const TextSpan(
-                        text: 'Offline',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      )
-              ],
-            ),
+        centerTitle: true,
+        title: RichText(
+          textAlign: TextAlign.center,
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text: widget.user.name,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const TextSpan(text: '\n'),
+              TextSpan(
+                text: widget.user.isOnline ? 'Online' : 'Offline',
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ],
           ),
-          actions: [
-            IconButton(
-                icon: Icon(Icons.logout_outlined),
-                color: Colors.white,
-                onPressed: () {
-                  Navigator.pop(context);
-                }),
-          ]),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout_outlined),
+            color: Colors.white,
+            onPressed: _signOut,
+          ),
+        ],
+      ),
       body: Column(
         children: <Widget>[
           Expanded(
             child: ListView.builder(
               reverse: true,
-              padding: EdgeInsets.all(20),
+              padding: const EdgeInsets.all(20),
               itemCount: messages.length,
               itemBuilder: (BuildContext context, int index) {
                 final Message message = messages[index];
                 final bool isMe = message.sender.id == currentUser.id;
-                final bool isSameUser = prevUserId == message.sender.id;
-                prevUserId = message.sender.id;
-                return _chatBubble(message, isMe, isSameUser);
+                return _chatBubble(message, isMe);
               },
             ),
           ),

@@ -1,0 +1,10 @@
+# Root editor and OS files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Keep Flutter app secrets untracked
+chatbot/android/app/google-services.json
+chatbot/ios/Runner/GoogleService-Info.plist
